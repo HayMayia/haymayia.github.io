@@ -389,8 +389,8 @@ body.dark-mode .scanlines { background: linear-gradient(to bottom, rgba(0,0,0,0)
       <div class="update-section">
         <div class="update-title">📡 Head ESP32 Update Info (via Internet)</div>
         <div class="update-row">
-          <button class="btn danger small" onclick="sendUpdateNow()" id="btnUpdateNow">Update Now</button>
-          <button class="btn secondary small" onclick="sendUpdateLater()" id="btnUpdateLater">Update Later</button>
+          <button class="btn danger small" onclick="sendUpdateNow()" id="btnUpdateNow" disabled>Update Now</button>
+          <button class="btn secondary small" onclick="sendUpdateLater()" id="btnUpdateLater" disabled>Update Later</button>
         </div>
         <div class="update-info" id="updateInfo">Connect BLE device first, then Head sends update via BLE</div>
       </div>
@@ -628,7 +628,7 @@ function sendBleCmd(cmd) {
     return;
   }
   try {
-    bleRxCharacteristic.writeValue(cmd);
+    bleRxCharacteristic.writeValue(new TextEncoder().encode(cmd));
     addLog('BLE command sent: ' + cmd, 'info');
     toast('BLE: ' + cmd, 'info');
   } catch (error) {
@@ -680,7 +680,7 @@ function sendManualBle() {
   } else {
     addLog('Manual BLE input: ' + val, 'info');
     if (bleConnected && bleRxCharacteristic) {
-      try { bleRxCharacteristic.writeValue(val); } catch(e) {}
+      try { bleRxCharacteristic.writeValue(new TextEncoder().encode(val)); } catch(e) {}
     }
   }
   manualBleInput.value = '';
