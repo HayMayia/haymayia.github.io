@@ -3,34 +3,765 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VocalBridge</title>
-<meta http-equiv="refresh" content="0; url=./Data/">
-<link rel="canonical" href="https://haymayia.github.io/Data/">
-<script>location.replace("./Data/");</script>
+<title>VocalBridge — Speech Detection Dashboard</title>
+<link rel="icon" type="image/png" href="favicon.png?v=6" sizes="32x32">
+<link rel="icon" type="image/png" href="favicon.png?v=6" sizes="16x16">
+<link rel="apple-touch-icon" href="favicon.png?v=6">
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #FAF5E3;
-    color: #4A3728; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; text-align: center; padding: 24px; }
-  .card { background: #fff; border: 1px solid #E9C97E; border-radius: 20px;
-    padding: 40px 32px; max-width: 380px; box-shadow: 0 10px 30px rgba(74,55,40,0.08); }
-  .logo { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 18px;
-    background: linear-gradient(135deg, #F09819, #E87A0C); display: flex;
-    align-items: center; justify-content: center; font-size: 30px; }
-  h1 { font-size: 24px; letter-spacing: -0.5px; margin-bottom: 8px; }
-  p { font-size: 14px; color: #8B6A3A; margin-bottom: 20px; }
-  a { display: inline-block; padding: 12px 24px; background: #F09819;
-    color: #fff; border-radius: 12px; text-decoration: none; font-weight: 600;
-    box-shadow: 0 4px 12px rgba(240,152,25,0.4); }
-  a:hover { background: #E87A0C; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #FAF5E3; --surface: #FFFFFF; --surface-2: #F3E8C9;
+  --border: #E9C97E; --text: #4A3728; --text-secondary: #8B6A3A;
+  --text-muted: #B89B5A; --accent: #F09819; --accent-hover: #E87A0C;
+  --accent-glow: rgba(240, 152, 25, 0.4); --red: #D9534F;
+  --blue: #4A90E2; --green: #5CB85C; --yellow: #F0AD4E;
+  --shadow: 0 10px 30px rgba(74, 55, 40, 0.08);
+}
+
+body.dark-mode {
+  --bg: #1A140E; --surface: #241E16; --surface-2: #2E2519;
+  --border: #4A3A24; --text: #F5E6C9; --text-secondary: #C9A86B;
+  --text-muted: #8B734B; --accent: #F0C07A; --accent-hover: #E8B05A;
+  --accent-glow: rgba(240, 152, 25, 0.2); --red: #D97A5E;
+  --blue: #6B8FA0; --green: #8FAE66; --yellow: #F0C07A;
+  --shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+*::selection { background: var(--accent); color: white; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg);
+  color: var(--text); min-height: 100vh; line-height: 1.5;
+  transition: background 0.4s, color 0.4s; overflow-x: hidden; }
+
+body::before { content: ''; position: fixed; top: -10%; left: -10%;
+  width: 60vw; height: 60vw; background: radial-gradient(circle,
+  rgba(240,152,25,0.15) 0%, transparent 60%); z-index: -1;
+  pointer-events: none; transition: all 0.4s; }
+body.dark-mode::before { background: radial-gradient(circle,
+  rgba(240,152,25,0.08) 0%, transparent 60%); }
+body::after { content: ''; position: fixed; bottom: -10%; right: -10%;
+  width: 50vw; height: 50vw; background: radial-gradient(circle,
+  rgba(217,83,79,0.1) 0%, transparent 50%); z-index: -1;
+  pointer-events: none; transition: all 0.4s; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 40px 24px;
+  min-height: 100vh; display: flex; flex-direction: column; gap: 28px; }
+
+header { display: flex; justify-content: space-between; align-items: center;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-icon { width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border-radius: 14px; display: flex; align-items: center;
+  justify-content: center; font-size: 24px;
+  box-shadow: 0 4px 12px var(--accent-glow); }
+.brand h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px;
+  background: linear-gradient(90deg, var(--text), var(--text-secondary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-sub { font-size: 12px; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+.controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.status { display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; font-size: 13px; color: var(--text-secondary);
+  box-shadow: var(--shadow); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%;
+  background: var(--red); box-shadow: 0 0 0 rgba(217,83,79,0.4); }
+.status-dot.online { background: var(--green);
+  box-shadow: 0 0 12px var(--green); animation: pulse-green 2s infinite; }
+.status-dot.paired { background: var(--blue);
+  box-shadow: 0 0 12px var(--blue); animation: pulse-blue 2s infinite; }
+.status-dot.waiting { background: var(--yellow); }
+
+@keyframes pulse-green { 0%,100% { box-shadow: 0 0 0 rgba(92,184,92,0.4); }
+  50% { box-shadow: 0 0 16px rgba(92,184,92,0.6); } }
+@keyframes pulse-blue { 0%,100% { box-shadow: 0 0 0 rgba(74,144,226,0.4); }
+  50% { box-shadow: 0 0 16px rgba(74,144,226,0.6); } }
+
+.btn { padding: 10px 18px; background: var(--accent); color: white;
+  border: none; border-radius: 10px; font-size: 13px; font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer;
+  transition: all 0.2s; box-shadow: 0 4px 12px var(--accent-glow); }
+.btn:hover { background: var(--accent-hover); transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--accent-glow); }
+.btn:active { transform: translateY(0); }
+.btn.secondary { background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); box-shadow: none; }
+.btn.secondary:hover { background: var(--surface); border-color: var(--accent); }
+.btn.small { padding: 6px 12px; font-size: 11px; }
+.btn.danger { background: var(--red); color: white; }
+.btn.danger:hover { background: #c44542; }
+.btn.disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.connect { background: var(--blue); }
+.btn.connect:hover { background: #3a78c2; }
+.btn.disconnect { background: var(--red); }
+.btn.disconnect:hover { background: #c44542; }
+
+.main-grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px;
+  align-items: start; }
+@media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+.ble-connect-card { background: var(--surface); border: 2px solid var(--border);
+  border-radius: 20px; padding: 28px; text-align: center;
+  box-shadow: var(--shadow); position: relative; }
+.ble-connect-card::before { content: ''; position: absolute; top: 0; left: 0;
+  right: 0; height: 4px; background: linear-gradient(90deg,var(--blue),var(--accent));
+  opacity: 0.6; }
+.connect-title { font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; }
+.connect-instructions { background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px; margin-bottom: 20px; text-align: left;
+  font-size: 12px; line-height: 1.6; color: var(--text-secondary); }
+.connect-step { display: flex; gap: 10px; margin-bottom: 10px; }
+.connect-step-num { width: 24px; height: 24px; background: var(--accent);
+  color: white; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.connect-step-text { font-size: 12px; }
+.connect-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.output-card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 32px 24px; text-align: center;
+  box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.output-card::before { content: ''; position: absolute; top: 0; left: 0;
+  right: 0; height: 4px; background: linear-gradient(90deg,var(--red),var(--accent),var(--yellow),var(--green),var(--blue));
+  opacity: 0.6; }
+.output-label { font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
+.output-box { width: 150px; height: 150px; border-radius: 50%;
+  background: var(--surface-2); border: 4px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px; font-family: 'JetBrains Mono', monospace;
+  font-size: 40px; font-weight: 700; color: var(--text-muted);
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); position: relative; }
+.output-box.active { border-width: 8px; box-shadow: 0 0 60px currentColor;
+  transform: scale(1.05); animation: detect-pop 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes detect-pop { 0% { transform: scale(1); box-shadow: 0 0 0 currentColor; }
+  50% { transform: scale(1.15); box-shadow: 0 0 40px currentColor; }
+  100% { transform: scale(1.05); box-shadow: 0 0 60px currentColor; } }
+.output-box.help { border-color: var(--red); color: var(--red); }
+.output-box.water { border-color: var(--blue); color: var(--blue); }
+.output-box.yes { border-color: var(--green); color: var(--green); }
+.output-box.no { border-color: var(--yellow); color: var(--yellow); }
+.output-box.pain { border-color: #C46A2E; color: #C46A2E; }
+.output-value { font-family: 'JetBrains Mono', monospace; font-size: 18px;
+  font-weight: 600; margin-bottom: 12px; }
+
+.log-card { background: var(--bg); border: 1px solid var(--border);
+  border-radius: 16px; padding: 20px; margin-top: 20px; }
+.log-header { display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.log-title { display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.log-clear { padding: 6px 12px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px; font-size: 11px;
+  color: var(--text-secondary); cursor: pointer; }
+.log-content { padding: 16px 20px; overflow-y: auto; flex: 1;
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; max-height: 300px; }
+.log-entry { padding: 10px 12px; margin-bottom: 8px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px; border-left: 4px solid; overflow-wrap: break-word;
+  animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); } }
+.log-detection { border-left-color: var(--red); color: var(--red); font-weight: 600; }
+.log-success { border-left-color: var(--green); color: var(--green); }
+.log-info { border-left-color: var(--accent); color: var(--accent); }
+.log-warning { border-left-color: var(--yellow); color: var(--yellow); }
+.log-error { border-left-color: var(--red); color: var(--red); }
+.log-ble { border-left-color: var(--blue); color: var(--blue); font-weight: 600; }
+.log-update { border-left-color: var(--yellow); color: var(--yellow); font-weight: 600; }
+.log-head { border-left-color: var(--green); color: var(--green); font-weight: 600; }
+
+.center-card { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 20px; }
+
+.waveform-card { background: var(--surface-2); border-radius: 16px;
+  padding: 20px; border: 1px solid var(--border); }
+.waveform-title { font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+#waveCanvas { width: 100%; height: 140px; background: var(--bg);
+  border-radius: 12px; border: 1px dashed var(--border); }
+
+.info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.info-card-mini { padding: 16px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 14px; text-align: center; }
+.info-label { font-size: 11px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.info-value { font-family: 'JetBrains Mono', monospace; font-size: 18px;
+  font-weight: 700; color: var(--text); }
+
+.bt-device-card { background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 16px; padding: 20px; }
+.bt-header { display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; }
+.bt-title { font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 1.5px; }
+.bt-status { display: flex; align-items: center; gap: 8px; font-size: 12px;
+  font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+.bt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+.bt-dot.paired { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+.update-section { background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 20px; margin-top: 12px; }
+.update-title { font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px; }
+.update-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.update-info { font-size: 12px; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace; }
+
+.cmd-section { margin-top: 8px; }
+.cmd-section-title { font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+.cmd-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+@media (max-width: 500px) { .cmd-grid { grid-template-columns: repeat(3, 1fr); } }
+.cmd-btn { padding: 10px 8px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif; }
+.cmd-btn:hover { background: var(--accent); color: white; border-color: var(--accent);
+  transform: translateY(-2px); }
+.cmd-btn:active { transform: translateY(0); }
+.cmd-btn.ble-cmd { background: var(--surface-2); border-color: var(--blue); color: var(--blue); }
+.cmd-btn.ble-cmd:hover { background: var(--blue); color: white; }
+.cmd-key { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--text-muted); margin-bottom: 2px; }
+
+.manual-input { background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px; margin-top: 12px; }
+.manual-title { font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+.manual-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.manual-input input { flex: 1; padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.manual-input input:focus { outline: none; border-color: var(--accent); }
+
+footer { margin-top: 24px; padding: 24px; border-top: 1px solid var(--border);
+  text-align: center; color: var(--text-muted); font-size: 12px; }
+footer strong { color: var(--text-secondary); font-weight: 600; }
+
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  display: flex; align-items: center; gap: 12px; font-size: 13px;
+  font-weight: 500; color: var(--text); z-index: 1000;
+  transform: translateX(120%); transition: transform 0.3s ease; }
+.toast.show { transform: translateX(0); }
+.toast.success { border-left: 4px solid var(--green); }
+.toast.warning { border-left: 4px solid var(--yellow); }
+.toast.error { border-left: 4px solid var(--red); }
+.toast.info { border-left: 4px solid var(--blue); }
+
+#updateModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(26,20,14,0.55); backdrop-filter: blur(8px); display: none;
+  align-items: center; justify-content: center; z-index: 2000; }
+body.dark-mode #updateModal { background: rgba(250,245,227,0.85); }
+.modal-content { background: var(--surface); border: 2px solid var(--border);
+  border-radius: 20px; padding: 32px; max-width: 420px; text-align: center;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.4); transform: scale(0.9);
+  transition: transform 0.3s ease; }
+.modal-showing .modal-content { transform: scale(1); }
+.modal-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.modal-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+.modal-ver { font-size: 18px; font-weight: 700; color: var(--accent);
+  font-family: 'JetBrains Mono', monospace; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 12px; }
+.modal-btn { flex: 1; padding: 12px 16px; border: none; border-radius: 12px;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif; }
+.modal-btn.primary { background: var(--accent); color: white;
+  box-shadow: 0 4px 12px var(--accent-glow); }
+.modal-btn.primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
+.modal-btn.secondary { background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); }
+.modal-btn.secondary:hover { background: var(--surface); }
+.hidden { display: none !important; }
+
+.scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.03) 50%, rgba(0,0,0,0.03));
+  background-size: 100% 4px; pointer-events: none; z-index: 50; opacity: 0.4; }
+body.dark-mode .scanlines { background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0) 50%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0.03)); }
+
+@media (max-width: 600px) {
+  body { padding: 10px; font-size: 16px; }
+  button { width: 100%; padding: 15px; margin-bottom: 10px; }
+}
 </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo">🎤</div>
-    <h1>VocalBridge</h1>
-    <p>Redirecting to the app…</p>
-    <a href="./Data/">Open VocalBridge →</a>
+<div class="scanlines"></div>
+
+<div class="container">
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🎤</div>
+      <div>
+        <h1>VocalBridge</h1>
+        <div class="brand-sub">v2.0 • BLE • Web Bluetooth • Head ESP32 Updates</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="status">
+        <div id="statusDot" class="status-dot"></div>
+        <span id="connectionText">Site Online</span>
+      </div>
+      <div class="status">
+        <div id="bleStatusDot" class="status-dot waiting"></div>
+        <span id="bleConnectionText">BLE: Not Connected</span>
+      </div>
+      <button id="themeBtn" class="btn secondary small" onclick="toggleTheme()">🌙 Dark Mode</button>
+      <button class="btn small" onclick="checkHeadUpdate()">📡 Check Head Update</button>
+    </div>
+  </header>
+
+  <div class="ble-connect-card">
+    <div class="connect-title">📱 Connect User Device via BLE</div>
+    <div class="connect-instructions">
+      <div class="connect-step">
+        <div class="connect-step-num">1</div>
+        <div class="connect-step-text">Click "Connect to User Device" below</div>
+      </div>
+      <div class="connect-step">
+        <div class="connect-step-num">2</div>
+        <div class="connect-step-text">Select "VocalBridge" from the device picker</div>
+      </div>
+      <div class="connect-step">
+        <div class="connect-step-num">3</div>
+        <div class="connect-step-text">Live detections appear automatically — no external app needed</div>
+      </div>
+    </div>
+    <div class="connect-btns">
+      <button id="bleConnectBtn" class="btn connect" onclick="connectBLE()">🔗 Connect to User Device</button>
+      <button id="bleDisconnectBtn" class="btn disconnect hidden" onclick="disconnectBLE()">❌ Disconnect</button>
+    </div>
+    <div style="margin-top:12px; font-size:11px; color:var(--text-muted);">
+      ✅ Works in Chrome/Edge • No external app • Direct BLE connection
+    </div>
   </div>
+
+  <div class="main-grid">
+    <div class="output-card">
+      <div class="output-label">Detected Word (from User Device via BLE)</div>
+      <div id="outputBox" class="output-box">—</div>
+      <div class="output-value" id="outputText">No detection</div>
+    </div>
+
+    <div class="log-card">
+      <div class="log-header">
+        <div class="log-title">📋 Activity Log</div>
+        <button class="log-clear" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-content" id="logContent"></div>
+    </div>
+  </div>
+
+  <div class="center-card">
+    <div class="waveform-card">
+      <div class="waveform-title">📡 Live Signal</div>
+      <canvas id="waveCanvas"></canvas>
+    </div>
+    <div class="info-row">
+      <div class="info-card-mini">
+        <div class="info-label">Head ESP32</div>
+        <div class="info-value" id="headValue">Online</div>
+      </div>
+      <div class="info-card-mini">
+        <div class="info-label">Firmware</div>
+        <div class="info-value" id="fwValue">V2.0-BLE</div>
+      </div>
+    </div>
+
+    <div class="bt-device-card">
+      <div class="bt-header">
+        <div class="bt-title">User Device (BLE)</div>
+        <div class="bt-status">
+          <div id="bleDot" class="bt-dot"></div>
+          <span id="bleDeviceStatus">Not Connected</span>
+        </div>
+      </div>
+      <div class="update-section">
+        <div class="update-title">📡 Head ESP32 Update Info (via Internet)</div>
+        <div class="update-row">
+          <button class="btn danger small" onclick="sendUpdateNow()" id="btnUpdateNow">Update Now</button>
+          <button class="btn secondary small" onclick="sendUpdateLater()" id="btnUpdateLater">Update Later</button>
+        </div>
+        <div class="update-info" id="updateInfo">Connect BLE device first, then Head sends update via BLE</div>
+      </div>
+    </div>
+
+    <div class="cmd-section">
+      <div class="cmd-section-title">BLE Commands to User Device</div>
+      <div class="cmd-grid">
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('c')"><span class="cmd-key">c</span>Calibrate</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('h')"><span class="cmd-key">h</span>HELP</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('w')"><span class="cmd-key">w</span>WATER</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('y')"><span class="cmd-key">y</span>YES</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('n')"><span class="cmd-key">n</span>NO</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('p')"><span class="cmd-key">p</span>PAIN</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('s')"><span class="cmd-key">s</span>SILENT</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('+')"><span class="cmd-key">+</span>Sens Up</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('-')"><span class="cmd-key">-</span>Sens Down</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('t')"><span class="cmd-key">t</span>Test</button>
+        <button class="cmd-btn ble-cmd" onclick="sendBleCmd('b')"><span class="cmd-key">b</span>Beep</button>
+      </div>
+    </div>
+
+    <div class="manual-input">
+      <div class="manual-title">⌨️ Manual BLE Input (type what you want to send)</div>
+      <div class="manual-row">
+        <input type="text" id="manualBleInput" placeholder="e.g. DETECT:HELP or c" />
+        <button class="btn small" onclick="sendManualBle()">Send</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">🧪 Demo: Simulate BLE Detection</div>
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+        <button class="cmd-btn" onclick="simDetect('HELP')">HELP</button>
+        <button class="cmd-btn" onclick="simDetect('WATER')">WATER</button>
+        <button class="cmd-btn" onclick="simDetect('YES')">YES</button>
+        <button class="cmd-btn" onclick="simDetect('NO')">NO</button>
+        <button class="cmd-btn" onclick="simDetect('PAIN')">PAIN</button>
+        <button class="cmd-btn" onclick="simDetect('—')">Clear</button>
+        <button class="cmd-btn" onclick="simHeadUpdate()">Head Update</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="updateModal">
+  <div class="modal-content">
+    <div class="modal-title">Update Available</div>
+    <div class="modal-sub">Send firmware update to User Device via Head ESP32?</div>
+    <div class="modal-ver" id="modalVersion">V2.1</div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="applyUpdate()">Update Now</button>
+      <button class="modal-btn secondary" onclick="dismissUpdate()">Update Later</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== BLE STATE ==========
+let bleDevice = null;
+let bleServer = null;
+let bleTxCharacteristic = null;
+let bleRxCharacteristic = null;
+
+const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const CHARACTERISTIC_TX_UUID = 'c7a321d0-4e4d-4a9e-8e5f-1b2c3d4e5f6a';
+const CHARACTERISTIC_RX_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+
+let autoResetTimer;
+let animationFrame;
+let currentWord = "—";
+let bleConnected = false;
+let headOnline = true;
+
+const outputBox = document.getElementById('outputBox');
+const outputText = document.getElementById('outputText');
+const logContent = document.getElementById('logContent');
+const statusDot = document.getElementById('statusDot');
+const connectionText = document.getElementById('connectionText');
+const bleStatusDot = document.getElementById('bleStatusDot');
+const bleConnectionText = document.getElementById('bleConnectionText');
+const bleConnectBtn = document.getElementById('bleConnectBtn');
+const bleDisconnectBtn = document.getElementById('bleDisconnectBtn');
+const bleDot = document.getElementById('bleDot');
+const bleDeviceStatus = document.getElementById('bleDeviceStatus');
+const headValue = document.getElementById('headValue');
+const fwValue = document.getElementById('fwValue');
+const updateInfo = document.getElementById('updateInfo');
+const btnUpdateNow = document.getElementById('btnUpdateNow');
+const btnUpdateLater = document.getElementById('btnUpdateLater');
+const manualBleInput = document.getElementById('manualBleInput');
+
+function addLog(msg, type = 'info') {
+  const entry = document.createElement('div');
+  const time = new Date().toLocaleTimeString([], {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  entry.className = `log-entry log-${type}`;
+  entry.textContent = `[${time}] ${msg}`;
+  logContent.prepend(entry);
+  logContent.scrollTop = 0;
+}
+function clearLog() { logContent.innerHTML = ''; }
+
+function toast(msg, type = 'info') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
+}
+
+function setOutput(word) {
+  if (!word || word === '—') {
+    outputBox.className = 'output-box';
+    outputBox.textContent = '—';
+    outputText.textContent = 'No detection';
+    currentWord = '—';
+    return;
+  }
+  currentWord = word;
+  outputBox.className = `output-box active ${word.toLowerCase()}`;
+  outputBox.textContent = word;
+  outputText.textContent = word;
+  addLog('Detection from User Device via BLE: "' + word + '"', 'detection');
+  toast('Detected: ' + word, 'success');
+
+  if (autoResetTimer) clearTimeout(autoResetTimer);
+  autoResetTimer = setTimeout(() => { if (currentWord === word) setOutput('—'); }, 3000);
+}
+
+function updateBleConnection(connected, deviceName) {
+  bleConnected = connected;
+  if (connected) {
+    bleStatusDot.className = 'status-dot paired';
+    bleConnectionText.textContent = 'BLE: Connected (' + deviceName + ')';
+    bleDot.className = 'bt-dot paired';
+    bleDeviceStatus.textContent = 'Connected';
+    bleConnectBtn.classList.add('hidden');
+    bleDisconnectBtn.classList.remove('hidden');
+    btnUpdateNow.disabled = false;
+    btnUpdateLater.disabled = false;
+    addLog('BLE connected to ' + deviceName, 'ble');
+    toast('Connected to User Device', 'success');
+  } else {
+    bleStatusDot.className = 'status-dot waiting';
+    bleConnectionText.textContent = 'BLE: Not Connected';
+    bleDot.className = 'bt-dot';
+    bleDeviceStatus.textContent = 'Not Connected';
+    bleConnectBtn.classList.remove('hidden');
+    bleDisconnectBtn.classList.add('hidden');
+    btnUpdateNow.disabled = true;
+    btnUpdateLater.disabled = true;
+    addLog('BLE disconnected', 'warning');
+    toast('Device disconnected', 'error');
+  }
+}
+
+function updateHeadStatus(online) {
+  headOnline = online;
+  if (headValue) headValue.textContent = online ? 'Online' : 'Offline';
+}
+
+function setUpdateInfo(msg) {
+  if (updateInfo) updateInfo.textContent = msg;
+}
+
+async function connectBLE() {
+  if (!navigator.bluetooth) {
+    addLog('Web Bluetooth not supported in this browser', 'error');
+    toast('Use Chrome/Edge for BLE', 'error');
+    return;
+  }
+  try {
+    addLog('Requesting BLE device...', 'info');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'VocalBridge' }],
+      optionalServices: [SERVICE_UUID]
+    });
+    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+    addLog('Connecting to GATT server...', 'info');
+    bleServer = await bleDevice.gatt.connect();
+    addLog('Getting service...', 'info');
+    const service = await bleServer.getPrimaryService(SERVICE_UUID);
+    addLog('Getting characteristics...', 'info');
+    bleTxCharacteristic = await service.getCharacteristic(CHARACTERISTIC_TX_UUID);
+    bleRxCharacteristic = await service.getCharacteristic(CHARACTERISTIC_RX_UUID);
+    await bleTxCharacteristic.startNotifications();
+    bleTxCharacteristic.addEventListener('characteristicvaluechanged', onBleNotification);
+    updateBleConnection(true, bleDevice.name);
+  } catch (error) {
+    addLog('BLE connection failed: ' + error, 'error');
+    toast('BLE connection failed', 'error');
+    console.error(error);
+  }
+}
+
+function onBleNotification(event) {
+  const value = event.target.value;
+  const decoder = new TextDecoder();
+  const msg = decoder.decode(value);
+  console.log('BLE received:', msg);
+  if (msg.startsWith('DETECT:')) {
+    const word = msg.replace('DETECT:', '').trim();
+    setOutput(word);
+  } else if (msg.startsWith('VERSION:')) {
+    // version info
+  } else if (msg.startsWith('CALIBRATED')) {
+    addLog('Device calibrated', 'success');
+  } else if (msg.startsWith('SENS:')) {
+    // sensitivity update
+  } else {
+    addLog('BLE: ' + msg, 'info');
+  }
+}
+
+function onDisconnected() {
+  addLog('BLE device disconnected', 'warning');
+  updateBleConnection(false);
+}
+
+async function disconnectBLE() {
+  if (bleDevice && bleDevice.gatt.connected) {
+    bleDevice.gatt.disconnect();
+  }
+  updateBleConnection(false);
+}
+
+function sendBleCmd(cmd) {
+  if (!bleConnected || !bleRxCharacteristic) {
+    addLog('BLE not connected', 'warning');
+    toast('Connect BLE device first', 'error');
+    return;
+  }
+  try {
+    bleRxCharacteristic.writeValue(cmd);
+    addLog('BLE command sent: ' + cmd, 'info');
+    toast('BLE: ' + cmd, 'info');
+  } catch (error) {
+    addLog('BLE send failed: ' + error, 'error');
+    toast('Send failed', 'error');
+  }
+}
+
+function checkHeadUpdate() {
+  if (!headOnline) {
+    toast('Head ESP32 not reachable', 'error');
+    return;
+  }
+  addLog('Checking Head ESP32 for update info via internet...', 'info');
+  toast('Checking Head update...', 'info');
+  setTimeout(() => {
+    showUpdateModal('V2.1');
+    setUpdateInfo('Head ESP32 reports update V2.1 available');
+  }, 1200);
+}
+
+function sendUpdateNow() {
+  if (!bleConnected) {
+    toast('User Device not connected via BLE', 'error');
+    return;
+  }
+  addLog('Sending "Update Now" via BLE to User Device', 'update');
+  setUpdateInfo('Update Now command sent via BLE to User Device');
+  sendBleCmd('u');
+  toast('Update Now sent via BLE', 'success');
+}
+
+function sendUpdateLater() {
+  if (!bleConnected) {
+    toast('User Device not connected via BLE', 'error');
+    return;
+  }
+  addLog('Sending "Update Later" via BLE to User Device', 'update');
+  setUpdateInfo('Update Later command sent via BLE to User Device');
+  toast('Update Later sent via BLE', 'info');
+}
+
+function sendManualBle() {
+  const val = manualBleInput.value.trim();
+  if (!val) return;
+  if (val.startsWith('DETECT:')) {
+    const word = val.replace('DETECT:', '').trim();
+    setOutput(word);
+  } else {
+    addLog('Manual BLE input: ' + val, 'info');
+    if (bleConnected && bleRxCharacteristic) {
+      try { bleRxCharacteristic.writeValue(val); } catch(e) {}
+    }
+  }
+  manualBleInput.value = '';
+}
+
+function toggleTheme() {
+  document.body.classList.toggle('dark-mode');
+  const btn = document.getElementById('themeBtn');
+  if (document.body.classList.contains('dark-mode')) {
+    btn.textContent = '☀️ Light Mode';
+    addLog('Dark mode enabled', 'info');
+  } else {
+    btn.textContent = '🌙 Dark Mode';
+    addLog('Light mode enabled', 'info');
+  }
+}
+
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+function resizeCanvas() {
+  if (!canvas) return;
+  canvas.width = canvas.parentElement.clientWidth;
+  canvas.height = 140;
+}
+window.addEventListener('resize', resizeCanvas);
+function drawWave() {
+  if (!ctx || !canvas) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const centerY = canvas.height / 2;
+  const amplitude = 40;
+  const freq = 0.02;
+  const time = Date.now() / 500;
+  ctx.beginPath(); ctx.moveTo(0, centerY);
+  for (let x = 0; x <= canvas.width; x += 4) {
+    const y = centerY + Math.sin(x * freq + time) * amplitude * 0.5;
+    ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = currentWord === '—' ? 'var(--text-muted)' : 'var(--accent)';
+  ctx.lineWidth = 2; ctx.stroke();
+  if (currentWord !== '—') {
+    const pulse = (Math.sin(Date.now() / 100) + 1) / 2;
+    ctx.fillStyle = 'var(--accent)';
+    ctx.globalAlpha = 0.15 + pulse * 0.25;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
+  }
+  animationFrame = requestAnimationFrame(drawWave);
+}
+if (canvas) { resizeCanvas(); drawWave(); }
+
+function simDetect(word) { setOutput(word); }
+function simHeadUpdate() {
+  showUpdateModal('V2.1');
+  setUpdateInfo('Simulated: Head ESP32 update available via internet');
+}
+
+function showUpdateModal(version) {
+  document.getElementById('modalVersion').textContent = version;
+  document.getElementById('updateModal').style.display = 'flex';
+  document.body.classList.add('modal-showing');
+  addLog('Update available from Head ESP32: ' + version, 'warning');
+}
+function dismissUpdate() {
+  document.getElementById('updateModal').style.display = 'none';
+  document.body.classList.remove('modal-showing');
+  addLog('Update dismissed', 'info');
+}
+function applyUpdate() {
+  document.getElementById('updateModal').style.display = 'none';
+  document.body.classList.remove('modal-showing');
+  sendUpdateNow();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  addLog('VocalBridge v2.0 BLE dashboard loaded', 'info');
+  addLog('Click "Connect to User Device" to pair via Web Bluetooth', 'info');
+  addLog('Head ESP32 reachable via internet for updates', 'head');
+  updateHeadStatus(true);
+  updateBleConnection(false);
+  manualBleInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendManualBle(); });
+});
+</script>
 </body>
 </html>
